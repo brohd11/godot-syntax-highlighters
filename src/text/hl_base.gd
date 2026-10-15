@@ -24,14 +24,24 @@ var _valid_to:int = -1
 
 
 func setup(p_text_edit:TextEdit, p_palette:Palette) -> void:
+	# SyntaxHighlighter only drops its own per-line cache on edits, so entry states would go stale.
+	if is_instance_valid(text_edit) and text_edit.lines_edited_from.is_connected(_on_lines_edited_from):
+		text_edit.lines_edited_from.disconnect(_on_lines_edited_from)
 	text_edit = p_text_edit
 	palette = p_palette
+	if multiline and text_edit != null:
+		text_edit.lines_edited_from.connect(_on_lines_edited_from)
 	clear_cache()
 
 
 func clear_cache() -> void:
 	_line_states.clear()
 	_valid_to = -1
+
+
+## The first edited line's entry state depends only on lines above it, so it stays trusted.
+func _on_lines_edited_from(from_line:int, to_line:int) -> void:
+	_valid_to = mini(_valid_to, mini(from_line, to_line))
 
 
 ## Returns [code]{column: {"color": Color}}[/code] with keys in ascending column order.
